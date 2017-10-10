@@ -7,11 +7,27 @@ struct rule rules[] =
 
 
 void encode (unsigned char * buffer, unsigned short length) {
-	printk("encode: length: %d\n", length);
+	
+	// printk("encode: length: %d\n", length);
+	unsigned char * p;
+	for (p = buffer; p < buffer + length; p++) {
+	
+		* p = 0x40 - * p;
+
+	}
+
 }
 
 void decode (unsigned char * buffer, unsigned short length) {
-	printk("decode: length: %d\n", length);
+	
+	// printk("decode: length: %d\n", length);
+	unsigned char * p;
+	for (p = buffer; p < buffer + length; p++) {
+	
+		* p = 0x40 - * p;
+
+	}
+
 }
 
 

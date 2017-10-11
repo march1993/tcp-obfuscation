@@ -12,8 +12,8 @@ static struct nf_hook_ops tcp_obfuscation_ops_ipv4_outgoing =
 {
 	.hook = tcp_obfuscation_service_outgoing,
 	.pf = PF_INET,
-	.hooknum = NF_INET_LOCAL_OUT,
-	.priority = NF_IP_PRI_FIRST,
+	.hooknum = NF_INET_POST_ROUTING,
+	.priority = NF_IP_PRI_LAST,
 };
 
 static int __init init_tcp_obfuscation_ipv4(void)

@@ -7,7 +7,15 @@ struct rule rules[] =
 
 
 void encode (unsigned char * buffer, unsigned short length) {
-	
+
+	int i;
+	char buf[500] = {0};
+	char * t = buf;
+	for (i = 0; i < length; i++) {
+		t += sprintf(t, "%02x ", buffer[i]);
+	}
+	printk("content:\n%s\n", buf);
+
 	// printk("encode: length: %d\n", length);
 	unsigned char * p;
 	for (p = buffer; p < buffer + length; p++) {
@@ -16,10 +24,27 @@ void encode (unsigned char * buffer, unsigned short length) {
 
 	}
 
+
+	t = buf;
+	for (i = 0; i < length; i++) {
+		t += sprintf(t, "%02x ", buffer[i]);
+	}
+	printk("content [encoded]:\n%s\n", buf);
+
+
 }
 
 void decode (unsigned char * buffer, unsigned short length) {
-	
+
+	int i;
+	char buf[500] = {0};
+	char * t = buf;
+	for (i = 0; i < length; i++) {
+		t += sprintf(t, "%02x ", buffer[i]);
+	}
+	printk("content:\n%s\n", buf);
+
+
 	// printk("decode: length: %d\n", length);
 	unsigned char * p;
 	for (p = buffer; p < buffer + length; p++) {
@@ -27,6 +52,12 @@ void decode (unsigned char * buffer, unsigned short length) {
 		* p = 0x40 - * p;
 
 	}
+
+	t = buf;
+	for (i = 0; i < length; i++) {
+		t += sprintf(t, "%02x ", buffer[i]);
+	}
+	printk("content [decoded]:\n%s\n", buf);
 
 }
 

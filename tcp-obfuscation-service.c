@@ -208,11 +208,12 @@ unsigned int tcp_obfuscation_service_incoming (
 
 			}
 
+			decode(payload, payload_len);
+
 			/* calc the checksum manually */
 			if (ipv4_header->protocol == IPPROTO_UDP) {
 
 				__wsum csum;
-				struct udphdr * uh;
 				int len;
 				int offset;
 
@@ -220,7 +221,6 @@ unsigned int tcp_obfuscation_service_incoming (
 
 				offset = skb_transport_offset(skb);
 				len = skb->len - offset;
-				uh = udp_hdr(skb);
 
 				csum = csum_partial(payload, payload_len, 0);
 				csum = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, len, IPPROTO_UDP, csum);
@@ -241,8 +241,6 @@ unsigned int tcp_obfuscation_service_incoming (
 				/* unsupported protocol, maybe TODO: ICMP */
 
 			}
-
-			decode(payload, payload_len);
 
 			return NF_ACCEPT;
 

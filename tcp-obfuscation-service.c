@@ -69,7 +69,7 @@ unsigned int tcp_obfuscation_service_outgoing (
 
 	struct iphdr * ipv4_header;
 	struct ipv6hdr * ipv6_header;
-	// protocol family
+	/* protocol family */
 	u_int8_t pf;
 	const unsigned n_rules = sizeof(rules) / sizeof(struct rule);
 	unsigned i;
@@ -83,7 +83,7 @@ unsigned int tcp_obfuscation_service_outgoing (
 
 		struct rule * r = rules + i;
 
-		// rule's protocol should be equal to packet's protocol
+		/* rule's protocol should be equal to packet's protocol */
 		if (r->protocol != pf) {
 
 			continue;
@@ -91,7 +91,7 @@ unsigned int tcp_obfuscation_service_outgoing (
 		}
 
 
-		// address should match
+		/* address should match */
 		if (pf == PF_INET && r->peer_ipv4._in4 == ipv4_header->daddr) {
 
 			unsigned short
@@ -102,12 +102,15 @@ unsigned int tcp_obfuscation_service_outgoing (
 			unsigned char * payload = ((unsigned char *) ipv4_header) + iph_len;
 
 			encode(payload, payload_len);
+			skb->sk->sk_no_check_tx = 1;
 
 			return NF_ACCEPT;
 
 		} else
 		if (pf == PF_INET6 && memcmp(&r->peer_ipv6._in6, &ipv6_header->saddr, sizeof(struct in6_addr)) == 0) {
 
+			/* TODO: IPv6 */
+			/* sk->no_check6_tx = 1; */
 			return NF_ACCEPT;
 
 		}

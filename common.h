@@ -8,6 +8,7 @@
 #include <linux/tcp.h>
 #include <linux/ip.h>
 #include <linux/ipv6.h>
+#include <net/udp.h>
 
 enum PROTOCOL {
 	IPv4 = PF_INET,

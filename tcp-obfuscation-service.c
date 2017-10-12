@@ -44,7 +44,6 @@ void decode (unsigned char * buffer, unsigned short length) {
 	}
 	printk("content:\n%s\n", buf);
 
-
 	// printk("decode: length: %d\n", length);
 	unsigned char * p;
 	for (p = buffer; p < buffer + length; p++) {
@@ -101,8 +100,39 @@ unsigned int tcp_obfuscation_service_outgoing (
 
 			unsigned char * payload = ((unsigned char *) ipv4_header) + iph_len;
 
-			encode(payload, payload_len);
+			skb->ip_summed = CHECKSUM_UNNECESSARY;
 			skb->sk->sk_no_check_tx = 1;
+
+			/* calc the checksum manually */
+			if (ipv4_header->protocol == IPPROTO_UDP) {
+
+				__wsum csum;
+				struct udphdr * uh;
+				int len;
+				int offset;
+
+				offset = skb_transport_offset(skb);
+				len = skb->len - offset;
+				uh = udp_hdr(skb);
+
+				uh->check = 0;
+				csum = csum_partial(payload, payload_len, 0);
+printk("src: %08x, dest: %08x, len: %d, proto: %d, csum0: %08x\n", ipv4_header->saddr, ipv4_header->daddr, len, (int) skb->sk->sk_protocol, (int) csum);
+				uh->check = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, len, skb->sk->sk_protocol, csum);
+				if (uh->check == 0) {
+
+					uh->check = CSUM_MANGLED_0;
+
+				}
+
+			} else
+			if (ipv4_header->protocol == IPPROTO_TCP) {
+
+			} else {
+				/* unsupported protocol, maybe TODO: ICMP */
+			}
+
+			encode(payload, payload_len);
 
 			return NF_ACCEPT;
 

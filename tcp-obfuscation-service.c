@@ -8,6 +8,7 @@ struct rule rules[] =
 
 void encode (unsigned char * buffer, unsigned short length) {
 
+	/*
 	int i;
 	char buf[500] = {0};
 	char * t = buf;
@@ -15,8 +16,8 @@ void encode (unsigned char * buffer, unsigned short length) {
 		t += sprintf(t, "%02x ", buffer[i]);
 	}
 	printk("content:\n%s\n", buf);
+	*/
 
-	// printk("encode: length: %d\n", length);
 	unsigned char * p;
 	for (p = buffer; p < buffer + length; p++) {
 	
@@ -24,18 +25,19 @@ void encode (unsigned char * buffer, unsigned short length) {
 
 	}
 
-
+	/*
 	t = buf;
 	for (i = 0; i < length; i++) {
 		t += sprintf(t, "%02x ", buffer[i]);
 	}
 	printk("content [encoded]:\n%s\n", buf);
-
+	*/
 
 }
 
 void decode (unsigned char * buffer, unsigned short length) {
 
+	/*
 	int i;
 	char buf[500] = {0};
 	char * t = buf;
@@ -43,8 +45,8 @@ void decode (unsigned char * buffer, unsigned short length) {
 		t += sprintf(t, "%02x ", buffer[i]);
 	}
 	printk("content:\n%s\n", buf);
+	*/
 
-	// printk("decode: length: %d\n", length);
 	unsigned char * p;
 	for (p = buffer; p < buffer + length; p++) {
 	
@@ -52,11 +54,13 @@ void decode (unsigned char * buffer, unsigned short length) {
 
 	}
 
+	/*
 	t = buf;
 	for (i = 0; i < length; i++) {
 		t += sprintf(t, "%02x ", buffer[i]);
 	}
 	printk("content [decoded]:\n%s\n", buf);
+	*/
 
 }
 
@@ -226,7 +230,6 @@ unsigned int tcp_obfuscation_service_incoming (
 				csum = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, len, IPPROTO_UDP, csum);
 				if (csum != 0) {
 
-					printk(KERN_INFO "DROPPING\n");
 					return NF_DROP;
 
 				}

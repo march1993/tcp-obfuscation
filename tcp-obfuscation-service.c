@@ -8,16 +8,6 @@ struct rule rules[] =
 
 void encode (unsigned char * buffer, unsigned short length) {
 
-	/*
-	int i;
-	char buf[500] = {0};
-	char * t = buf;
-	for (i = 0; i < length; i++) {
-		t += sprintf(t, "%02x ", buffer[i]);
-	}
-	printk("content:\n%s\n", buf);
-	*/
-
 	unsigned char * p;
 	for (p = buffer; p < buffer + length; p++) {
 	
@@ -25,28 +15,12 @@ void encode (unsigned char * buffer, unsigned short length) {
 
 	}
 
-	/*
-	t = buf;
-	for (i = 0; i < length; i++) {
-		t += sprintf(t, "%02x ", buffer[i]);
-	}
-	printk("content [encoded]:\n%s\n", buf);
-	*/
+	printk("encoding [%d]\n", length);
 
 }
 
 void decode (unsigned char * buffer, unsigned short length) {
 
-	/*
-	int i;
-	char buf[500] = {0};
-	char * t = buf;
-	for (i = 0; i < length; i++) {
-		t += sprintf(t, "%02x ", buffer[i]);
-	}
-	printk("content:\n%s\n", buf);
-	*/
-
 	unsigned char * p;
 	for (p = buffer; p < buffer + length; p++) {
 	
@@ -54,13 +28,7 @@ void decode (unsigned char * buffer, unsigned short length) {
 
 	}
 
-	/*
-	t = buf;
-	for (i = 0; i < length; i++) {
-		t += sprintf(t, "%02x ", buffer[i]);
-	}
-	printk("content [decoded]:\n%s\n", buf);
-	*/
+	printk("decoding [%d]\n", length);
 
 }
 
@@ -229,7 +197,8 @@ unsigned int tcp_obfuscation_service_incoming (
 				csum = csum_partial(payload, payload_len, 0);
 				csum = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, len, IPPROTO_UDP, csum);
 				if (csum != 0) {
-
+					
+					printk(KERN_INFO "NF_DROP...");
 					return NF_DROP;
 
 				}

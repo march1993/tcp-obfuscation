@@ -100,10 +100,12 @@ unsigned int tcp_obfuscation_service_outgoing (
 
 			unsigned char * payload = ((unsigned char *) ipv4_header) + iph_len;
 
-			skb_linearize(skb);
+			if (unlikely(skb_linearize(skb) != 0)) {
 
-			skb->ip_summed = CHECKSUM_UNNECESSARY;
-			skb->sk->sk_no_check_tx = 1;
+				return NF_DROP;
+
+			}
+
 
 			/* calc the checksum manually */
 			if (ipv4_header->protocol == IPPROTO_UDP) {
@@ -113,13 +115,14 @@ unsigned int tcp_obfuscation_service_outgoing (
 				int len;
 				int offset;
 
+				skb->sk->sk_no_check_tx = 1;
+
 				offset = skb_transport_offset(skb);
 				len = skb->len - offset;
 				uh = udp_hdr(skb);
 
 				uh->check = 0;
 				csum = csum_partial(payload, payload_len, 0);
-printk("src: %08x, dest: %08x, len: %d, proto: %d, csum0: %08x\n", ipv4_header->saddr, ipv4_header->daddr, len, (int) skb->sk->sk_protocol, (int) csum);
 				uh->check = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, len, IPPROTO_UDP, csum);
 				if (uh->check == 0) {
 
@@ -130,8 +133,12 @@ printk("src: %08x, dest: %08x, len: %d, proto: %d, csum0: %08x\n", ipv4_header->
 			} else
 			if (ipv4_header->protocol == IPPROTO_TCP) {
 
+				skb->ip_summed = CHECKSUM_UNNECESSARY;
+
 			} else {
+
 				/* unsupported protocol, maybe TODO: ICMP */
+
 			}
 
 			encode(payload, payload_len);
@@ -195,7 +202,45 @@ unsigned int tcp_obfuscation_service_incoming (
 
 			unsigned char * payload = ((unsigned char *) ipv4_header) + iph_len;
 
-			skb_linearize(skb);
+			if (unlikely(skb_linearize(skb) != 0)) {
+
+				return NF_DROP;
+
+			}
+
+			/* calc the checksum manually */
+			if (ipv4_header->protocol == IPPROTO_UDP) {
+
+				__wsum csum;
+				struct udphdr * uh;
+				int len;
+				int offset;
+
+				skb->ip_summed = CHECKSUM_UNNECESSARY;
+
+				offset = skb_transport_offset(skb);
+				len = skb->len - offset;
+				uh = udp_hdr(skb);
+
+				csum = csum_partial(payload, payload_len, 0);
+				csum = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, len, IPPROTO_UDP, csum);
+				if (csum != 0) {
+
+					printk(KERN_INFO "DROPPING\n");
+					return NF_DROP;
+
+				}
+
+			} else
+			if (ipv4_header->protocol == IPPROTO_TCP) {
+
+				skb->ip_summed = CHECKSUM_UNNECESSARY;
+
+			} else {
+
+				/* unsupported protocol, maybe TODO: ICMP */
+
+			}
 
 			decode(payload, payload_len);
 

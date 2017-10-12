@@ -100,6 +100,8 @@ unsigned int tcp_obfuscation_service_outgoing (
 
 			unsigned char * payload = ((unsigned char *) ipv4_header) + iph_len;
 
+			skb_linearize(skb);
+
 			skb->ip_summed = CHECKSUM_UNNECESSARY;
 			skb->sk->sk_no_check_tx = 1;
 
@@ -118,7 +120,7 @@ unsigned int tcp_obfuscation_service_outgoing (
 				uh->check = 0;
 				csum = csum_partial(payload, payload_len, 0);
 printk("src: %08x, dest: %08x, len: %d, proto: %d, csum0: %08x\n", ipv4_header->saddr, ipv4_header->daddr, len, (int) skb->sk->sk_protocol, (int) csum);
-				uh->check = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, len, skb->sk->sk_protocol, csum);
+				uh->check = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, len, IPPROTO_UDP, csum);
 				if (uh->check == 0) {
 
 					uh->check = CSUM_MANGLED_0;
@@ -192,6 +194,8 @@ unsigned int tcp_obfuscation_service_incoming (
 				payload_len = tot_len - iph_len;
 
 			unsigned char * payload = ((unsigned char *) ipv4_header) + iph_len;
+
+			skb_linearize(skb);
 
 			decode(payload, payload_len);
 

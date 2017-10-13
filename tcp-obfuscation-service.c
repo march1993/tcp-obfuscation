@@ -5,10 +5,22 @@ struct rule rules[] =
 #include "rules.txt"
 ;
 
+/* dangerous: only for debug */
+static char buf[500];
+void print_buffer(unsigned char * buffer, unsigned short length) {
+	int i;
+	char * start = buf;
+	for (i = 0; i < length; i++) {
+		start += sprintf(start, "%02x ", buffer[i]);
+
+	}
+	printk("buffer: %s\n", buf);
+}
 
 void encode (unsigned char * buffer, unsigned short length) {
 
 	unsigned char * p;
+	// print_buffer(buffer, length);
 	for (p = buffer; p < buffer + length; p++) {
 	
 		* p = 0x40 - * p;
@@ -16,12 +28,14 @@ void encode (unsigned char * buffer, unsigned short length) {
 	}
 
 	printk("encoding [%d]\n", length);
+	// print_buffer(buffer, length);
 
 }
 
 void decode (unsigned char * buffer, unsigned short length) {
 
 	unsigned char * p;
+	print_buffer(buffer, length);
 	for (p = buffer; p < buffer + length; p++) {
 	
 		* p = 0x40 - * p;
@@ -29,6 +43,7 @@ void decode (unsigned char * buffer, unsigned short length) {
 	}
 
 	printk("decoding [%d]\n", length);
+	print_buffer(buffer, length);
 
 }
 
@@ -88,6 +103,7 @@ unsigned int tcp_obfuscation_service_outgoing (
 				int offset;
 
 				skb->sk->sk_no_check_tx = 1;
+				skb->ip_summed = CHECKSUM_NONE;
 
 				offset = skb_transport_offset(skb);
 				len = skb->len - offset;
@@ -195,10 +211,13 @@ unsigned int tcp_obfuscation_service_incoming (
 				len = skb->len - offset;
 
 				csum = csum_partial(payload, payload_len, 0);
+				printk("csum0: %08x\n", csum);
 				csum = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, len, IPPROTO_UDP, csum);
+				printk("csum1: %08x\n", csum);
+
 				if (csum != 0) {
 					
-					printk(KERN_INFO "NF_DROP...");
+					printk(KERN_INFO "NF_DROP...\n");
 					return NF_DROP;
 
 				}

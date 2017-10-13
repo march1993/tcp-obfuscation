@@ -20,7 +20,7 @@ void print_buffer(unsigned char * buffer, unsigned short length) {
 void encode (unsigned char * buffer, unsigned short length) {
 
 	unsigned char * p;
-	// print_buffer(buffer, length);
+	print_buffer(buffer, length);
 	for (p = buffer; p < buffer + length; p++) {
 	
 		* p = 0x40 - * p;
@@ -28,7 +28,7 @@ void encode (unsigned char * buffer, unsigned short length) {
 	}
 
 	printk("encoding [%d]\n", length);
-	// print_buffer(buffer, length);
+	print_buffer(buffer, length);
 
 }
 

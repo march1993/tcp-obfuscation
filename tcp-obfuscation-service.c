@@ -4,6 +4,8 @@
 struct rule rules[] =
 #include "rules.txt"
 ;
+const unsigned n_rules = sizeof(rules) / sizeof(struct rule);
+
 
 /* dangerous: only for debug */
 static char buf[500];
@@ -11,6 +13,7 @@ void print_buffer(unsigned char * buffer, unsigned short length) {
 	int i;
 	char * start = buf;
 	for (i = 0; i < length; i++) {
+
 		start += sprintf(start, "%02x ", buffer[i]);
 
 	}
@@ -57,11 +60,15 @@ unsigned int tcp_obfuscation_service_outgoing (
 	struct ipv6hdr * ipv6_header;
 	/* protocol family */
 	u_int8_t pf;
-	const unsigned n_rules = sizeof(rules) / sizeof(struct rule);
 	unsigned i;
 
-	pf = state->pf;
+	if (unlikely(skb_linearize(skb) != 0)) {
 
+		return NF_DROP;
+
+	}
+
+	pf = state->pf;
 	ipv4_header = ip_hdr(skb);
 	ipv6_header = ipv6_hdr(skb);
 
@@ -86,13 +93,6 @@ unsigned int tcp_obfuscation_service_outgoing (
 				payload_len = tot_len - iph_len;
 
 			unsigned char * payload = ((unsigned char *) ipv4_header) + iph_len;
-
-			if (unlikely(skb_linearize(skb) != 0)) {
-
-				return NF_DROP;
-
-			}
-
 
 			/* calc the checksum manually */
 			if (ipv4_header->protocol == IPPROTO_UDP) {
@@ -160,8 +160,13 @@ unsigned int tcp_obfuscation_service_incoming (
 	struct ipv6hdr * ipv6_header;
 	// protocol family
 	u_int8_t pf;
-	const unsigned n_rules = sizeof(rules) / sizeof(struct rule);
 	unsigned i;
+
+	if (unlikely(skb_linearize(skb) != 0)) {
+
+		return NF_DROP;
+
+	}
 
 	pf = state->pf;
 
@@ -179,7 +184,6 @@ unsigned int tcp_obfuscation_service_incoming (
 
 		}
 
-
 		// address should match
 		if (pf == PF_INET && r->peer_ipv4._in4 == ipv4_header->saddr) {
 
@@ -189,12 +193,7 @@ unsigned int tcp_obfuscation_service_incoming (
 				payload_len = tot_len - iph_len;
 
 			unsigned char * payload = ((unsigned char *) ipv4_header) + iph_len;
-
-			if (unlikely(skb_linearize(skb) != 0)) {
-
-				return NF_DROP;
-
-			}
+printk("%s, data_len: %d\n", skb_is_nonlinear(skb) ? "is_non_linear" : "is_linear", (int) skb->data_len);
 
 			decode(payload, payload_len);
 

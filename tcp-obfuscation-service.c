@@ -16,8 +16,6 @@ void encode (unsigned char * buffer, unsigned short length) {
 
 	}
 
-	printk("encoding [%d]\n", length);
-
 }
 
 void decode (unsigned char * buffer, unsigned short length) {
@@ -28,8 +26,6 @@ void decode (unsigned char * buffer, unsigned short length) {
 		* p = 0x40 - * p;
 
 	}
-
-	printk("decoding [%d]\n", length);
 
 }
 
@@ -177,12 +173,6 @@ unsigned int tcp_obfuscation_service_incoming (
 
 			unsigned char * payload = ((unsigned char *) ipv4_header) + iph_len;
 
-			if (ipv4_header->frag_off) {
-
-				return NF_ACCEPT;
-
-			}
-
 			decode(payload, payload_len);
 
 			/* calc the checksum manually */
@@ -198,13 +188,10 @@ unsigned int tcp_obfuscation_service_incoming (
 				len = skb->len - offset;
 
 				csum = csum_partial(payload, payload_len, 0);
-				printk("csum0: %08x\n", csum);
 				csum = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, len, IPPROTO_UDP, csum);
-				printk("csum1: %08x\n", csum);
 
 				if (csum != 0 && csum != CSUM_MANGLED_0) {
 					
-					printk(KERN_INFO "NF_DROP...\n");
 					return NF_DROP;
 
 				}

@@ -82,7 +82,7 @@ unsigned int tcp_obfuscation_service_outgoing (
 
 			unsigned short
 				iph_len = ipv4_header->ihl * 4,
-				tot_len = __be16_to_cpu(ipv4_header->tot_len),
+				tot_len = ntohs(ipv4_header->tot_len),
 				payload_len = tot_len - iph_len;
 
 			unsigned char * payload = ((unsigned char *) ipv4_header) + iph_len;
@@ -185,7 +185,7 @@ unsigned int tcp_obfuscation_service_incoming (
 
 			unsigned short
 				iph_len = ipv4_header->ihl * 4,
-				tot_len = __be16_to_cpu(ipv4_header->tot_len),
+				tot_len = ntohs(ipv4_header->tot_len),
 				payload_len = tot_len - iph_len;
 
 			unsigned char * payload = ((unsigned char *) ipv4_header) + iph_len;
@@ -215,7 +215,7 @@ unsigned int tcp_obfuscation_service_incoming (
 				csum = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, len, IPPROTO_UDP, csum);
 				printk("csum1: %08x\n", csum);
 
-				if (csum != 0) {
+				if (csum != 0 && csum != CSUM_MANGLED_0) {
 					
 					printk(KERN_INFO "NF_DROP...\n");
 					return NF_DROP;

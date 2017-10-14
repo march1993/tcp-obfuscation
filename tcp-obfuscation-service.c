@@ -177,6 +177,12 @@ unsigned int tcp_obfuscation_service_incoming (
 
 			unsigned char * payload = ((unsigned char *) ipv4_header) + iph_len;
 
+			if (ipv4_header->frag_off) {
+
+				return NF_ACCEPT;
+
+			}
+
 			decode(payload, payload_len);
 
 			/* calc the checksum manually */

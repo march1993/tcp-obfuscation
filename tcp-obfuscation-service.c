@@ -7,23 +7,9 @@ struct rule rules[] =
 const unsigned n_rules = sizeof(rules) / sizeof(struct rule);
 
 
-/* dangerous: only for debug */
-static char buf[500];
-void print_buffer(unsigned char * buffer, unsigned short length) {
-	int i;
-	char * start = buf;
-	for (i = 0; i < length; i++) {
-
-		start += sprintf(start, "%02x ", buffer[i]);
-
-	}
-	printk("buffer: %s\n", buf);
-}
-
 void encode (unsigned char * buffer, unsigned short length) {
 
 	unsigned char * p;
-	print_buffer(buffer, length);
 	for (p = buffer; p < buffer + length; p++) {
 	
 		* p = 0x40 - * p;
@@ -31,14 +17,12 @@ void encode (unsigned char * buffer, unsigned short length) {
 	}
 
 	printk("encoding [%d]\n", length);
-	print_buffer(buffer, length);
 
 }
 
 void decode (unsigned char * buffer, unsigned short length) {
 
 	unsigned char * p;
-	print_buffer(buffer, length);
 	for (p = buffer; p < buffer + length; p++) {
 	
 		* p = 0x40 - * p;
@@ -46,7 +30,6 @@ void decode (unsigned char * buffer, unsigned short length) {
 	}
 
 	printk("decoding [%d]\n", length);
-	print_buffer(buffer, length);
 
 }
 
@@ -193,7 +176,6 @@ unsigned int tcp_obfuscation_service_incoming (
 				payload_len = tot_len - iph_len;
 
 			unsigned char * payload = ((unsigned char *) ipv4_header) + iph_len;
-printk("%s, data_len: %d\n", skb_is_nonlinear(skb) ? "is_non_linear" : "is_linear", (int) skb->data_len);
 
 			decode(payload, payload_len);
 

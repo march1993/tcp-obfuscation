@@ -13,9 +13,11 @@ sudo make insmod
 
 # implemented
 
-Udp over ipv4 could be encoded or decoded.
+* TCP, UDP, ICMP over ipv4 could be encoded or decoded.
+* Nat is supported. Note that netfilter would defrag the incoming packets, so that it is unnecessary to defrag again in our outgoing hook.
+* IP fragmentation is supported.
 
 # todo
 
-Implementation for ip fragment, tcp, icmp and ipv6.
+Implementation for ipv6.
 

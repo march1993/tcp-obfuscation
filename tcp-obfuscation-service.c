@@ -10,8 +10,9 @@ const unsigned n_rules = sizeof(rules) / sizeof(struct rule);
 void encode (unsigned char * buffer, unsigned short length) {
 
 	unsigned char * p;
+
 	for (p = buffer; p < buffer + length; p++) {
-	
+
 		* p = 0x40 - * p;
 
 	}
@@ -21,8 +22,9 @@ void encode (unsigned char * buffer, unsigned short length) {
 void decode (unsigned char * buffer, unsigned short length) {
 
 	unsigned char * p;
+
 	for (p = buffer; p < buffer + length; p++) {
-	
+
 		* p = 0x40 - * p;
 
 	}
@@ -41,7 +43,7 @@ unsigned int tcp_obfuscation_service_outgoing (
 	u_int8_t pf;
 	unsigned i;
 
-	if (unlikely(skb_linearize(skb) != 0)) {
+	if (unlikely(0 != skb_linearize(skb))) {
 
 		return NF_DROP;
 
@@ -64,7 +66,7 @@ unsigned int tcp_obfuscation_service_outgoing (
 
 
 		/* address should match */
-		if (pf == PF_INET && r->peer_ipv4._in4 == ipv4_header->daddr) {
+		if (PF_INET == pf && r->peer_ipv4._in4 == ipv4_header->daddr) {
 
 			unsigned short
 				iph_len = ipv4_header->ihl * 4,
@@ -73,16 +75,26 @@ unsigned int tcp_obfuscation_service_outgoing (
 
 			unsigned char * payload = ((unsigned char *) ipv4_header) + iph_len;
 
+			/* disable GSO */
+			skb_gso_reset(skb);
+			if (NULL != skb->sk) {
+
+				/* I believe net_gso_ok has bug! */
+				skb->sk->sk_gso_type = ~0;
+				skb->sk->sk_gso_max_size = 0;
+
+			}
+
+			/* disable checksum */
+			skb->ip_summed = CHECKSUM_UNNECESSARY;
+
 			/* calc the checksum manually */
-			if (ipv4_header->protocol == IPPROTO_UDP) {
+			if (IPPROTO_UDP == ipv4_header->protocol) {
 
 				__wsum csum;
 				struct udphdr * uh;
 				int len;
 				int offset;
-
-				skb->sk->sk_no_check_tx = 1;
-				skb->ip_summed = CHECKSUM_NONE;
 
 				offset = skb_transport_offset(skb);
 				len = skb->len - offset;
@@ -91,20 +103,27 @@ unsigned int tcp_obfuscation_service_outgoing (
 				uh->check = 0;
 				csum = csum_partial(payload, payload_len, 0);
 				uh->check = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, len, IPPROTO_UDP, csum);
-				if (uh->check == 0) {
+				if (0 == uh->check) {
 
 					uh->check = CSUM_MANGLED_0;
 
 				}
 
 			} else
-			if (ipv4_header->protocol == IPPROTO_TCP) {
+			if (IPPROTO_TCP == ipv4_header->protocol) {
 
-				skb->ip_summed = CHECKSUM_UNNECESSARY;
+				__wsum csum;
+				struct tcphdr * th;
+
+				th = tcp_hdr(skb);
+
+				th->check = 0;
+				csum = csum_partial(payload, payload_len, 0);
+				th->check = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, payload_len, IPPROTO_TCP, csum);
 
 			} else {
 
-				/* unsupported protocol, maybe TODO: ICMP */
+				/* For future other protocols needing checksum */
 
 			}
 
@@ -113,7 +132,7 @@ unsigned int tcp_obfuscation_service_outgoing (
 			return NF_ACCEPT;
 
 		} else
-		if (pf == PF_INET6 && memcmp(&r->peer_ipv6._in6, &ipv6_header->saddr, sizeof(struct in6_addr)) == 0) {
+		if (PF_INET6 == pf && 0 == memcmp(&r->peer_ipv6._in6, &ipv6_header->saddr, sizeof(struct in6_addr))) {
 
 			/* TODO: IPv6 */
 			/* sk->no_check6_tx = 1; */
@@ -137,11 +156,13 @@ unsigned int tcp_obfuscation_service_incoming (
 
 	struct iphdr * ipv4_header;
 	struct ipv6hdr * ipv6_header;
-	// protocol family
+	struct net_device * dev = skb->dev;
+	struct net * net = dev_net(dev);
+	/* protocol family */
 	u_int8_t pf;
 	unsigned i;
 
-	if (unlikely(skb_linearize(skb) != 0)) {
+	if (unlikely(0 != skb_linearize(skb))) {
 
 		return NF_DROP;
 
@@ -164,54 +185,91 @@ unsigned int tcp_obfuscation_service_incoming (
 		}
 
 		// address should match
-		if (pf == PF_INET && r->peer_ipv4._in4 == ipv4_header->saddr) {
+		if (PF_INET == pf && r->peer_ipv4._in4 == ipv4_header->saddr) {
 
-			unsigned short
-				iph_len = ipv4_header->ihl * 4,
-				tot_len = ntohs(ipv4_header->tot_len),
-				payload_len = tot_len - iph_len;
+			unsigned short iph_len, tot_len, payload_len;
+			unsigned char * payload;
 
-			unsigned char * payload = ((unsigned char *) ipv4_header) + iph_len;
+			if (ip_is_fragment(ipv4_header)) {
+
+				// still collecting fragments
+				if (ip_defrag(net, skb, IP_DEFRAG_CONNTRACK_IN)) {
+
+					return NF_STOLEN;
+
+				}
+
+				// update skb and ipv4_header
+				if (unlikely(0 != skb_linearize(skb))) {
+
+					return NF_DROP;
+
+				}
+				ipv4_header = ip_hdr(skb);
+
+			}
+
+			iph_len = ipv4_header->ihl * 4;
+			tot_len = ntohs(ipv4_header->tot_len);
+			payload_len = tot_len - iph_len;
+			payload = ((unsigned char *) ipv4_header) + iph_len;
 
 			decode(payload, payload_len);
 
-			/* calc the checksum manually */
-			if (ipv4_header->protocol == IPPROTO_UDP) {
+			/* disable checksum */
+			skb->ip_summed = CHECKSUM_UNNECESSARY;
+
+			if (IPPROTO_UDP == ipv4_header->protocol) {
 
 				__wsum csum;
 				int len;
 				int offset;
+				struct udphdr * uh;
 
 				skb->ip_summed = CHECKSUM_UNNECESSARY;
 
 				offset = skb_transport_offset(skb);
 				len = skb->len - offset;
+				uh = udp_hdr(skb);
 
 				csum = csum_partial(payload, payload_len, 0);
 				csum = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, len, IPPROTO_UDP, csum);
 
-				if (csum != 0 && csum != CSUM_MANGLED_0) {
-					
+				if (unlikely(0 != csum && CSUM_MANGLED_0 != csum && 0 != uh->check)) {
+
 					return NF_DROP;
 
 				}
 
 			} else
-			if (ipv4_header->protocol == IPPROTO_TCP) {
+			if (IPPROTO_TCP == ipv4_header->protocol) {
 
-				skb->ip_summed = CHECKSUM_UNNECESSARY;
+				__wsum csum;
+				struct tcphdr * th;
+
+				th = tcp_hdr(skb);
+
+				csum = csum_partial(payload, payload_len, 0);
+				csum = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, payload_len, IPPROTO_TCP, csum);
+
+				if (unlikely(0 != csum)) {
+
+					return NF_DROP;
+
+				}
 
 			} else {
 
-				/* unsupported protocol, maybe TODO: ICMP */
+				/* For future other protocols needing checksum */
 
 			}
 
 			return NF_ACCEPT;
 
 		} else
-		if (pf == PF_INET6 && memcmp(&r->peer_ipv6._in6, &ipv6_header->saddr, sizeof(struct in6_addr)) == 0) {
+		if (PF_INET6 == pf && 0 == memcmp(&r->peer_ipv6._in6, &ipv6_header->saddr, sizeof(struct in6_addr))) {
 
+			// TODO: IPv6 Support
 			return NF_ACCEPT;
 
 		}

@@ -218,51 +218,9 @@ unsigned int tcp_obfuscation_service_incoming (
 
 			/* disable checksum */
 			skb->ip_summed = CHECKSUM_UNNECESSARY;
-
-			if (IPPROTO_UDP == ipv4_header->protocol) {
-
-				__wsum csum;
-				int len;
-				int offset;
-				struct udphdr * uh;
-
-				skb->ip_summed = CHECKSUM_UNNECESSARY;
-
-				offset = skb_transport_offset(skb);
-				len = skb->len - offset;
-				uh = udp_hdr(skb);
-
-				csum = csum_partial(payload, payload_len, 0);
-				csum = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, len, IPPROTO_UDP, csum);
-
-				if (unlikely(0 != csum && CSUM_MANGLED_0 != csum && 0 != uh->check)) {
-
-					return NF_DROP;
-
-				}
-
-			} else
-			if (IPPROTO_TCP == ipv4_header->protocol) {
-
-				__wsum csum;
-				struct tcphdr * th;
-
-				th = tcp_hdr(skb);
-
-				csum = csum_partial(payload, payload_len, 0);
-				csum = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, payload_len, IPPROTO_TCP, csum);
-
-				if (unlikely(0 != csum)) {
-
-					return NF_DROP;
-
-				}
-
-			} else {
-
-				/* For future other protocols needing checksum */
-
-			}
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(4,9,0)
+			skb->csum_bad = 0;
+#endif
 
 			return NF_ACCEPT;
 

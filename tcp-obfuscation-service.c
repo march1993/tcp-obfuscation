@@ -218,7 +218,7 @@ unsigned int tcp_obfuscation_service_incoming (
 
 			/* disable checksum */
 			skb->ip_summed = CHECKSUM_UNNECESSARY;
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(4,9,0)
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(4, 12, 0)
 			skb->csum_bad = 0;
 #endif
 

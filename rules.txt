@@ -2,6 +2,11 @@
 	{
 		.protocol = IPv4,
 		.peer_ipv4.in4 = {192, 168, 237, 130},
+
+		/* if your current machine is behind an NAT device, otherwise set it to false */
+		.ipv4_behind_nat = true,
+		/* translated IPv4 address */
+		.nat_ipv4.in4 = {202, 120, 190, 208},
 	},
 	{
 		.protocol = IPv6,

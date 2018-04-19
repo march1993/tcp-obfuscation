@@ -109,6 +109,8 @@ unsigned int tcp_obfuscation_service_outgoing (
 
 				}
 
+				ipv4_header->protocol = DUMMY_UDP;
+
 			} else
 			if (IPPROTO_TCP == ipv4_header->protocol) {
 
@@ -120,6 +122,8 @@ unsigned int tcp_obfuscation_service_outgoing (
 				th->check = 0;
 				csum = csum_partial(payload, payload_len, 0);
 				th->check = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, payload_len, IPPROTO_TCP, csum);
+
+				ipv4_header->protocol = DUMMY_TCP;
 
 			} else {
 
@@ -221,6 +225,18 @@ unsigned int tcp_obfuscation_service_incoming (
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(4, 12, 0)
 			skb->csum_bad = 0;
 #endif
+
+			if (ipv4_header->protocol == DUMMY_UDP) {
+
+				ipv4_header->protocol = IPPROTO_UDP;
+
+			} else
+			if (ipv4_header->protocol == DUMMY_TCP) {
+
+				ipv4_header->protocol = IPPROTO_TCP;
+
+			} else {
+			}
 
 			return NF_ACCEPT;
 

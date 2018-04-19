@@ -11,6 +11,8 @@
 #include <linux/ipv6.h>
 #include <net/udp.h>
 
+__u8 DUMMY_TCP = 0xFD, DUMMY_UDP=0xFE;
+
 enum PROTOCOL {
 	IPv4 = PF_INET,
 	IPv6 = PF_INET6,
@@ -32,6 +34,10 @@ struct rule {
 	union {
 		union in4 peer_ipv4;
 		union in6 peer_ipv6;
+	};
+	struct {
+		bool ipv4_behind_nat;
+		union in4 nat_ipv4;
 	};
 
 };

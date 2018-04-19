@@ -255,11 +255,11 @@ unsigned int tcp_obfuscation_service_incoming (
 				uh = udp_hdr(skb);
 
 				ipv4_header->protocol = IPPROTO_UDP;
+
 				if (r->ipv4_behind_nat) {
 
-					__be32 delta = r->nat_ipv4._in4 - ipv4_header->daddr;
-					delta = ~delta;
-					uh->check = csum_partial(&delta, sizeof(delta), uh->check);
+					uh->check = uh->check - ~((unsigned short)r->nat_ipv4._in4) - ((unsigned short)ipv4_header->daddr);
+					uh->check = uh->check - ~((unsigned short)(r->nat_ipv4._in4 >> 16)) - ((unsigned short)(ipv4_header->daddr >> 16));
 
 				}
 

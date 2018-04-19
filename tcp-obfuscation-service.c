@@ -258,8 +258,12 @@ unsigned int tcp_obfuscation_service_incoming (
 
 				if (r->ipv4_behind_nat) {
 
-					uh->check = uh->check - ~((unsigned short)r->nat_ipv4._in4) - ((unsigned short)ipv4_header->daddr);
-					uh->check = uh->check - ~((unsigned short)(r->nat_ipv4._in4 >> 16)) - ((unsigned short)(ipv4_header->daddr >> 16));
+					unsigned long csum = uh->check;
+					csum = csum - ~(0xFFFF & r->nat_ipv4._in4) - (0xFFFF & ipv4_header->daddr);
+					csum = csum - ~(r->nat_ipv4._in4 >> 16) - (ipv4_header->daddr >> 16);
+					csum = (csum >> 16) + (csum & 0xFFFF);
+					csum +=  (csum >> 16);
+					uh->check = (unsigned short) csum;
 
 				}
 

@@ -22,7 +22,7 @@ void encode (unsigned char * buffer, unsigned short length) {
 void decode (unsigned char * buffer, unsigned short length) {
 
 	unsigned char * p;
-printk(KERN_INFO "decoding %u bytes\n", length);
+
 	for (p = buffer; p < buffer + length; p++) {
 
 		* p = 0x40 - * p;
@@ -250,9 +250,7 @@ unsigned int tcp_obfuscation_service_incoming (
 
 			if (ipv4_header->protocol == DUMMY_UDP) {
 
-				struct udphdr * uh;
-
-				uh = udp_hdr(skb);
+				struct udphdr * uh = udp_hdr(skb);
 
 				ipv4_header->protocol = IPPROTO_UDP;
 
@@ -270,7 +268,20 @@ unsigned int tcp_obfuscation_service_incoming (
 			} else
 			if (ipv4_header->protocol == DUMMY_TCP) {
 
+				struct tcphdr * tp = tcp_hdr(skb);
+
 				ipv4_header->protocol = IPPROTO_TCP;
+
+				if (r->ipv4_behind_nat) {
+
+					unsigned long csum = tp->check;
+					csum = csum - ~(0xFFFF & r->nat_ipv4._in4) - (0xFFFF & ipv4_header->daddr);
+					csum = csum - ~(r->nat_ipv4._in4 >> 16) - (ipv4_header->daddr >> 16);
+					csum = (csum >> 16) + (csum & 0xFFFF);
+					csum +=  (csum >> 16);
+					tp->check = (unsigned short) csum;
+
+				}
 
 			} else {
 

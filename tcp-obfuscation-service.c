@@ -257,7 +257,8 @@ unsigned int tcp_obfuscation_service_incoming (
 				ipv4_header->protocol = IPPROTO_UDP;
 				if (r->ipv4_behind_nat) {
 
-					__be32 delta = ipv4_header->daddr - r->nat_ipv4._in4;
+					__be32 delta = r->nat_ipv4._in4 - ipv4_header->daddr;
+					delta = ~delta;
 					uh->check = csum_partial(&delta, sizeof(delta), uh->check);
 
 				}

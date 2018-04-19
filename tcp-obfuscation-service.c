@@ -102,7 +102,17 @@ unsigned int tcp_obfuscation_service_outgoing (
 
 				uh->check = 0;
 				csum = csum_partial(payload, payload_len, 0);
-				uh->check = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, len, IPPROTO_UDP, csum);
+
+				if (r->ipv4_behind_nat) {
+
+					uh->check = csum_tcpudp_magic(r->nat_ipv4._in4, ipv4_header->daddr, len, IPPROTO_UDP, csum);
+
+				} else {
+
+					uh->check = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, len, IPPROTO_UDP, csum);
+
+				}
+
 				if (0 == uh->check) {
 
 					uh->check = CSUM_MANGLED_0;
@@ -121,7 +131,16 @@ unsigned int tcp_obfuscation_service_outgoing (
 
 				th->check = 0;
 				csum = csum_partial(payload, payload_len, 0);
-				th->check = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, payload_len, IPPROTO_TCP, csum);
+
+				if (r->ipv4_behind_nat) {
+
+					th->check = csum_tcpudp_magic(r->nat_ipv4._in4, ipv4_header->daddr, payload_len, IPPROTO_TCP, csum);
+
+				} else {
+
+					th->check = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, payload_len, IPPROTO_TCP, csum);
+
+				}
 
 				ipv4_header->protocol = DUMMY_TCP;
 

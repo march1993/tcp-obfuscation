@@ -289,6 +289,10 @@ unsigned int tcp_obfuscation_service_incoming (
 
 			}
 
+			// reset ip header checksum
+			ipv4_header->check = 0;
+			ipv4_header->check = ip_fast_csum((unsigned char *) ipv4_header, ipv4_header->ihl);
+
 			return NF_ACCEPT;
 
 		} else

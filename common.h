@@ -11,7 +11,7 @@
 #include <linux/ipv6.h>
 #include <net/udp.h>
 
-__u8 DUMMY_TCP = 0xFD, DUMMY_UDP=0xFE;
+__u8 DUMMY_TCP = 0xFD, DUMMY_UDP = 0xFE, DUMMY_ICMP = 0xFC;
 
 enum PROTOCOL {
 	IPv4 = PF_INET,

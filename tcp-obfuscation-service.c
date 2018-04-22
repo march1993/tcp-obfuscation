@@ -128,6 +128,11 @@ unsigned int tcp_obfuscation_service_outgoing (
 
 				ipv4_header->protocol = DUMMY_TCP;
 
+			} else
+			if (IPPROTO_ICMP == ipv4_header->protocol) {
+
+				ipv4_header->protocol = DUMMY_ICMP;
+
 			} else {
 
 				/* For future other protocols needing checksum */
@@ -216,7 +221,7 @@ unsigned int tcp_obfuscation_service_incoming (
 			skb->csum_bad = 0;
 #endif
 
-			if (ipv4_header->protocol == DUMMY_UDP) {
+			if (DUMMY_UDP == ipv4_header->protocol) {
 
 				struct udphdr * uh = udp_hdr(skb);
 
@@ -234,7 +239,7 @@ unsigned int tcp_obfuscation_service_incoming (
 				}
 
 			} else
-			if (ipv4_header->protocol == DUMMY_TCP) {
+			if (DUMMY_TCP == ipv4_header->protocol) {
 
 				struct tcphdr * tp = tcp_hdr(skb);
 
@@ -250,6 +255,11 @@ unsigned int tcp_obfuscation_service_incoming (
 					tp->check = (unsigned short) csum;
 
 				}
+
+			} else
+			if (DUMMY_ICMP == ipv4_header->protocol) {
+
+				ipv4_header->protocol = IPPROTO_ICMP;
 
 			} else {
 

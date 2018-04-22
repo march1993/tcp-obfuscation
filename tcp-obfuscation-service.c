@@ -43,11 +43,7 @@ unsigned int tcp_obfuscation_service_outgoing (
 	u_int8_t pf;
 	unsigned i;
 
-	if (unlikely(0 != skb_linearize(skb))) {
-
-		return NF_DROP;
-
-	}
+	if (unlikely(0 != skb_linearize(skb))) { return NF_DROP; }
 
 	pf = state->pf;
 	ipv4_header = ip_hdr(skb);
@@ -58,25 +54,25 @@ unsigned int tcp_obfuscation_service_outgoing (
 		struct rule * r = rules + i;
 
 		/* rule's protocol should be equal to packet's protocol */
-		if (r->protocol != pf) {
-
-			continue;
-
-		}
-
+		if (r->protocol != pf) { continue; }
 
 		/* address should match */
 		if (PF_INET == pf && r->peer_ipv4._in4 == ipv4_header->daddr) {
 
-			unsigned short
-				iph_len = ipv4_header->ihl * 4,
-				tot_len = ntohs(ipv4_header->tot_len),
-				payload_len = tot_len - iph_len;
+			unsigned short iph_len, tot_len, payload_len;
+			unsigned char * payload;
 
-			unsigned char * payload = ((unsigned char *) ipv4_header) + iph_len;
+			if (skb_unclone(skb, GFP_ATOMIC)) { return NF_DROP; }
+			ipv4_header = ip_hdr(skb);
+
+			iph_len = ipv4_header->ihl * 4;
+			tot_len = ntohs(ipv4_header->tot_len);
+			payload_len = tot_len - iph_len;
+			payload = ((unsigned char *) ipv4_header) + iph_len;
 
 			/* disable GSO */
 			skb_gso_reset(skb);
+
 			if (NULL != skb->sk) {
 
 				/* I believe net_gso_ok has bug! */
@@ -92,32 +88,22 @@ unsigned int tcp_obfuscation_service_outgoing (
 			if (IPPROTO_UDP == ipv4_header->protocol) {
 
 				__wsum csum;
-				struct udphdr * uh;
-				int len;
-				int offset;
-
-				offset = skb_transport_offset(skb);
-				len = skb->len - offset;
-				uh = udp_hdr(skb);
+				struct udphdr * uh = udp_hdr(skb);
 
 				uh->check = 0;
 				csum = csum_partial(payload, payload_len, 0);
 
 				if (r->ipv4_behind_nat) {
 
-					uh->check = csum_tcpudp_magic(r->nat_ipv4._in4, ipv4_header->daddr, len, IPPROTO_UDP, csum);
+					uh->check = csum_tcpudp_magic(r->nat_ipv4._in4, ipv4_header->daddr, payload_len, IPPROTO_UDP, csum);
 
 				} else {
 
-					uh->check = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, len, IPPROTO_UDP, csum);
+					uh->check = csum_tcpudp_magic(ipv4_header->saddr, ipv4_header->daddr, payload_len, IPPROTO_UDP, csum);
 
 				}
 
-				if (0 == uh->check) {
-
-					uh->check = CSUM_MANGLED_0;
-
-				}
+				if (0 == uh->check) { uh->check = CSUM_MANGLED_0; }
 
 				ipv4_header->protocol = DUMMY_UDP;
 
@@ -125,9 +111,7 @@ unsigned int tcp_obfuscation_service_outgoing (
 			if (IPPROTO_TCP == ipv4_header->protocol) {
 
 				__wsum csum;
-				struct tcphdr * th;
-
-				th = tcp_hdr(skb);
+				struct tcphdr * th = tcp_hdr(skb);
 
 				th->check = 0;
 				csum = csum_partial(payload, payload_len, 0);
@@ -188,11 +172,7 @@ unsigned int tcp_obfuscation_service_incoming (
 	u_int8_t pf;
 	unsigned i;
 
-	if (unlikely(0 != skb_linearize(skb))) {
-
-		return NF_DROP;
-
-	}
+	if (unlikely(0 != skb_linearize(skb))) { return NF_DROP; }
 
 	pf = state->pf;
 
@@ -204,11 +184,7 @@ unsigned int tcp_obfuscation_service_incoming (
 		struct rule * r = rules + i;
 
 		// rule's protocol should be equal to packet's protocol
-		if (r->protocol != pf) {
-
-			continue;
-
-		}
+		if (r->protocol != pf) { continue; }
 
 		// address should match
 		if (PF_INET == pf && r->peer_ipv4._in4 == ipv4_header->saddr) {
@@ -219,18 +195,10 @@ unsigned int tcp_obfuscation_service_incoming (
 			if (ip_is_fragment(ipv4_header)) {
 
 				// still collecting fragments
-				if (ip_defrag(net, skb, IP_DEFRAG_CONNTRACK_IN)) {
-
-					return NF_STOLEN;
-
-				}
+				if (ip_defrag(net, skb, IP_DEFRAG_CONNTRACK_IN)) { return NF_STOLEN; }
 
 				// update skb and ipv4_header
-				if (unlikely(0 != skb_linearize(skb))) {
-
-					return NF_DROP;
-
-				}
+				if (unlikely(0 != skb_linearize(skb))) { return NF_DROP; }
 				ipv4_header = ip_hdr(skb);
 
 			}

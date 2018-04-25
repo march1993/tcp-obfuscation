@@ -229,30 +229,20 @@ unsigned int tcp_obfuscation_service_incoming (
 
 				if (r->ipv4_behind_nat) {
 
-					unsigned long csum = uh->check;
-					csum = csum - ~(0xFFFF & r->nat_ipv4._in4) - (0xFFFF & ipv4_header->daddr);
-					csum = csum - ~(r->nat_ipv4._in4 >> 16) - (ipv4_header->daddr >> 16);
-					csum = (csum >> 16) + (csum & 0xFFFF);
-					csum +=  (csum >> 16);
-					uh->check = (unsigned short) csum;
+					uh->check = ~csum_fold(csum_add(csum_sub(csum_unfold(uh->check), (__force __wsum) ipv4_header->daddr), (__force __wsum) r->nat_ipv4._in4));
 
 				}
 
 			} else
 			if (DUMMY_TCP == ipv4_header->protocol) {
 
-				struct tcphdr * tp = tcp_hdr(skb);
+				struct tcphdr * th = tcp_hdr(skb);
 
 				ipv4_header->protocol = IPPROTO_TCP;
 
 				if (r->ipv4_behind_nat) {
 
-					unsigned long csum = tp->check;
-					csum = csum - ~(0xFFFF & r->nat_ipv4._in4) - (0xFFFF & ipv4_header->daddr);
-					csum = csum - ~(r->nat_ipv4._in4 >> 16) - (ipv4_header->daddr >> 16);
-					csum = (csum >> 16) + (csum & 0xFFFF);
-					csum +=  (csum >> 16);
-					tp->check = (unsigned short) csum;
+					th->check = ~csum_fold(csum_add(csum_sub(csum_unfold(th->check), (__force __wsum) ipv4_header->daddr), (__force __wsum) r->nat_ipv4._in4));
 
 				}
 
